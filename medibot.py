@@ -1,19 +1,22 @@
 import os
-import streamlit as st
+from dotenv import load_dotenv #type: ignore
+import streamlit as st #type: ignore
 
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.chains import RetrievalQA
-
-from langchain_community.vectorstores import FAISS
-from langchain_core.prompts import PromptTemplate
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_community.embeddings import HuggingFaceEmbeddings #type: ignore
+from langchain.chains import RetrievalQA #type: ignore
+from langchain_groq import ChatGroq #type: ignore
+from langchain_community.vectorstores import FAISS #type: ignore
+from langchain_core.prompts import PromptTemplate #type: ignore
+from langchain_huggingface import HuggingFaceEndpoint #type: ignore
 
 ## Uncomment the following files if you're not using pipenv as your virtual environment manager
 #from dotenv import load_dotenv, find_dotenv
 #load_dotenv(find_dotenv())
 
-
+load_dotenv()
 DB_FAISS_PATH="vectorstore/db_faiss"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 @st.cache_resource
 def get_vectorstore():
     embedding_model=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
@@ -26,13 +29,18 @@ def set_custom_prompt(custom_prompt_template):
     return prompt
 
 
-def load_llm(huggingface_repo_id, HF_TOKEN):
-    llm=HuggingFaceEndpoint(
-        repo_id=huggingface_repo_id,
-        temperature=0.5,
-        model_kwargs={"token":HF_TOKEN,
-                      "max_length":"512"}
+def load_llm(huggingface_repo_id, HF_TOKEN, GROK_API_KEY):
+    # llm=HuggingFaceEndpoint(
+    #     repo_id=huggingface_repo_id,
+    #     temperature=0.5,
+    #     model_kwargs={"token":HF_TOKEN,
+    #                   "max_length":"512"}
+    # )
+    llm = ChatGroq(
+        model="Gemma2-9b-It", 
+        groq_api_key=GROQ_API_KEY
     )
+
     return llm
 
 
@@ -71,7 +79,11 @@ def main():
                 st.error("Failed to load the vector store")
 
             qa_chain=RetrievalQA.from_chain_type(
-                llm=load_llm(huggingface_repo_id=HUGGINGFACE_REPO_ID, HF_TOKEN=HF_TOKEN),
+                llm=load_llm(
+                    huggingface_repo_id=HUGGINGFACE_REPO_ID, 
+                    HF_TOKEN=HF_TOKEN,
+                    GROK_API_KEY=GROQ_API_KEY
+                    ),
                 chain_type="stuff",
                 retriever=vectorstore.as_retriever(search_kwargs={'k':3}),
                 return_source_documents=True,
@@ -84,8 +96,8 @@ def main():
             source_documents=response["source_documents"]
             result_to_show=result+"\nSource Docs:\n"+str(source_documents)
             #response="Hi, I am MediBot!"
-            st.chat_message('assistant').markdown(result_to_show)
-            st.session_state.messages.append({'role':'assistant', 'content': result_to_show})
+            st.chat_message('assistant').markdown(result)
+            st.session_state.messages.append({'role':'assistant', 'content': result})
 
         except Exception as e:
             st.error(f"Error: {str(e)}")

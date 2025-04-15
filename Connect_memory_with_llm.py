@@ -9,11 +9,14 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Step 1: Setup LLM 
-from langchain_huggingface import HuggingFaceEndpoint  # Updated import
-from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEndpoint  #type: ignore
+from langchain_core.prompts import PromptTemplate #type: ignore
+from langchain.chains import RetrievalQA #type: ignore
+from langchain_huggingface import HuggingFaceEmbeddings #type: ignore
+from langchain_community.vectorstores import FAISS #type: ignore
+from langchain_groq import ChatGroq #type: ignore
+from dotenv import load_dotenv #type: ignore
+load_dotenv()
 
 # from huggingface_hub import InferenceClient
 # client = InferenceClient(token=token)
@@ -22,17 +25,22 @@ from langchain_community.vectorstores import FAISS
 
 HF_TOKEN = os.environ.get("HF_TOKEN")
 HUGGINGFACE_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
+GROQ_API_KEY = os.getenv("GROK_API_KEY")
 
-def load_llm(hf_repo_id):
+def load_llm(hf_repo_id, GROK_API_KEY):
     print("Using HF_TOKEN:", HF_TOKEN)
     print("Using repo_id:", hf_repo_id)
-    llm = HuggingFaceEndpoint(
-        repo_id=hf_repo_id,
-        temperature=0.5,
-        model_kwargs={
-            "token": HF_TOKEN,
-            "max_length": 512
-        }
+    # llm = HuggingFaceEndpoint(
+    #     repo_id=hf_repo_id,
+    #     temperature=0.5,
+    #     model_kwargs={
+    #         "token": HF_TOKEN,
+    #         "max_length": 512
+    #     }
+    # )
+    llm = ChatGroq(
+        model="Gemma2-9b-It", 
+        groq_api_key=GROQ_API_KEY
     )
     return llm
 
@@ -60,7 +68,7 @@ embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-Mi
 db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
 
 qa_chain = RetrievalQA.from_chain_type(
-    llm=load_llm(HUGGINGFACE_REPO_ID),
+    llm=load_llm(HUGGINGFACE_REPO_ID, GROQ_API_KEY),
     chain_type="stuff",
     retriever=db.as_retriever(search_kwargs={"k": 3}),
     return_source_documents=True,
