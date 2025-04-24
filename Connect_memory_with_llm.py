@@ -28,8 +28,8 @@ HUGGINGFACE_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
 GROQ_API_KEY = os.getenv("GROK_API_KEY")
 
 def load_llm(hf_repo_id, GROK_API_KEY):
-    print("Using HF_TOKEN:", HF_TOKEN)
-    print("Using repo_id:", hf_repo_id)
+    # print("Using HF_TOKEN:", HF_TOKEN)
+    # print("Using repo_id:", hf_repo_id)
     # llm = HuggingFaceEndpoint(
     #     repo_id=hf_repo_id,
     #     temperature=0.5,
